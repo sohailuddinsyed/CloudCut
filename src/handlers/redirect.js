@@ -29,7 +29,7 @@ async function handler(event) {
 
   try {
     // 1. Extract short code from path parameters
-    const shortCode = event.pathParameters?.shortCode;
+    const shortCode = event.pathParameters?.shortCode || event.pathParameters?.short_code;
     
     if (!shortCode) {
       logInfo('Missing shortCode in path parameters', { requestId });
@@ -38,8 +38,8 @@ async function handler(event) {
 
     logInfo('Looking up short code', { requestId, shortCode });
 
-    // 2. Query url_mappings table using shortCode
-    const item = await getItem(URL_TABLE, { shortCode });
+    // 2. Query url_mappings table using shortUrl as key (matches DynamoDB schema)
+    const item = await getItem(URL_TABLE, { shortUrl: shortCode });
     
     // 3. If not found: return 404 error
     if (!item) {

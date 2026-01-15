@@ -73,7 +73,7 @@ async function handler(event) {
       }
 
       // Check if alias already exists
-      const existing = await getItem(URL_TABLE, { shortCode: customAlias });
+      const existing = await getItem(URL_TABLE, { shortUrl: customAlias });  // Use shortUrl key
       if (existing) {
         logInfo('Custom alias already taken', { requestId, customAlias });
         return errorResponse(409, 'ALIAS_TAKEN', 'This alias is already in use');
@@ -90,7 +90,7 @@ async function handler(event) {
 
     // 3. Store mapping in DynamoDB
     const item = {
-      shortCode,
+      shortUrl: shortCode,  // Use shortUrl as partition key to match DynamoDB schema
       longUrl,
       createdAt: Math.floor(Date.now() / 1000)
     };

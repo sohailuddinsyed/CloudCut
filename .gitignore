@@ -1,6 +1,9 @@
 # Dependencies
 node_modules/
 
+# Deployment
+*.bat
+
 # Environment variables
 .env
 .env.local
@@ -37,3 +40,7 @@ Plan.md
 requirements.md
 design.md
 tasks.md
+DEPLOYMENT.md
+PROJECT_DOCUMENTATION.md
+API_ENDPOINTS.md
+API_GATEWAY_SETUP.md
