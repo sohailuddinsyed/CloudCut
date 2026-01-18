@@ -38,7 +38,7 @@ async function handler(event) {
 
     logInfo('Looking up short code', { requestId, shortCode });
 
-    // 2. Query url_mappings table using shortUrl as key (matches DynamoDB schema)
+    // 2. Query url_mappings table using shortUrl as partition key (matches DynamoDB schema)
     const item = await getItem(URL_TABLE, { shortUrl: shortCode });
     
     // 3. If not found: return 404 error

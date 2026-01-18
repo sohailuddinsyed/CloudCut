@@ -73,7 +73,7 @@ async function handler(event) {
       }
 
       // Check if alias already exists
-      const existing = await getItem(URL_TABLE, { shortUrl: customAlias });  // Use shortUrl key
+      const existing = await getItem(URL_TABLE, { shortUrl: customAlias });
       if (existing) {
         logInfo('Custom alias already taken', { requestId, customAlias });
         return errorResponse(409, 'ALIAS_TAKEN', 'This alias is already in use');
