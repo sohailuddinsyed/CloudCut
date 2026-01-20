@@ -17,7 +17,10 @@ function errorResponse(statusCode, code, message) {
   return {
     statusCode,
     headers: {
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Headers': 'Content-Type',
+      'Access-Control-Allow-Methods': 'POST,GET,OPTIONS'
     },
     body: JSON.stringify({
       error: message,

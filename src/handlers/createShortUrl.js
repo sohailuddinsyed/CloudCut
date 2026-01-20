@@ -115,7 +115,10 @@ async function handler(event) {
     return {
       statusCode: 201,
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type',
+        'Access-Control-Allow-Methods': 'POST,GET,OPTIONS'
       },
       body: JSON.stringify({
         shortUrl,

@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>URL Shortener - Fast & Simple</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="header">
+                <h1>🔗 URL Shortener</h1>
+                <p class="subtitle">Transform long URLs into short, shareable links</p>
+            </div>
+
+            <form id="shortenForm" class="form">
+                <div class="input-group">
+                    <label for="longUrl">Enter your long URL</label>
+                    <input 
+                        type="url" 
+                        id="longUrl" 
+                        placeholder="https://example.com/very/long/url" 
+                        required
+                    >
+                </div>
+
+                <div class="input-group">
+                    <label for="customAlias">Custom alias (optional)</label>
+                    <input 
+                        type="text" 
+                        id="customAlias" 
+                        placeholder="my-custom-link"
+                        pattern="[a-zA-Z0-9-_]+"
+                        title="Only letters, numbers, hyphens, and underscores allowed"
+                    >
+                </div>
+
+                <button type="submit" class="btn-primary" id="shortenBtn">
+                    <span class="btn-text">Shorten URL</span>
+                    <span class="loader" style="display: none;"></span>
+                </button>
+            </form>
+
+            <div id="result" class="result" style="display: none;">
+                <div class="result-content">
+                    <label>Your shortened URL:</label>
+                    <div class="url-display">
+                        <input type="text" id="shortUrl" readonly>
+                        <button class="btn-copy" id="copyBtn" title="Copy to clipboard">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="message" class="message" style="display: none;"></div>
+        </div>
+
+        <footer class="footer">
+            <p>Fast, secure, and reliable URL shortening service</p>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

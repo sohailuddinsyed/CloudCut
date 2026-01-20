@@ -72,7 +72,10 @@ async function handler(event) {
       statusCode: 302,
       headers: {
         'Location': item.longUrl,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type',
+        'Access-Control-Allow-Methods': 'POST,GET,OPTIONS'
       },
       body: JSON.stringify({
         message: 'Redirecting...'
