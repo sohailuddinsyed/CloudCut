@@ -93,8 +93,8 @@ form.addEventListener('submit', async (e) => {
     }
     
     // Validate custom alias if provided
-    if (customAlias && !/^[a-zA-Z0-9-_]+$/.test(customAlias)) {
-        showMessage('Custom alias can only contain letters, numbers, hyphens, and underscores', 'error');
+    if (customAlias && !/^[a-zA-Z0-9_-]{4,32}$/.test(customAlias)) {
+        showMessage('Custom alias must be 4-32 characters (letters, numbers, hyphens, and underscores only)', 'error');
         return;
     }
     

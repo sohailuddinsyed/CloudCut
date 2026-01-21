@@ -31,8 +31,10 @@
                         type="text" 
                         id="customAlias" 
                         placeholder="my-custom-link"
-                        pattern="[a-zA-Z0-9-_]+"
-                        title="Only letters, numbers, hyphens, and underscores allowed"
+                        pattern="[a-zA-Z0-9-_]{4,32}"
+                        title="4-32 characters: letters, numbers, hyphens, and underscores only"
+                        minlength="4"
+                        maxlength="32"
                     >
                 </div>
 

@@ -32,7 +32,7 @@ describe('Redirect Handler - Unit Tests', () => {
       // Mock DynamoDB to return a valid URL mapping
       ddbMock.on(GetCommand).resolves({
         Item: {
-          shortUrl: 'abc123',
+          shortCode: 'abc123',
           longUrl: 'https://example.com/original/url',
           createdAt: 1704067200
         }
@@ -62,7 +62,7 @@ describe('Redirect Handler - Unit Tests', () => {
       // Mock DynamoDB to return URL mapping without expiresAt
       ddbMock.on(GetCommand).resolves({
         Item: {
-          shortUrl: 'test123',
+          shortCode: 'test123',
           longUrl: 'https://example.com/test',
           createdAt: 1704067200
         }
@@ -91,7 +91,7 @@ describe('Redirect Handler - Unit Tests', () => {
       // Mock DynamoDB to return URL mapping with future expiration
       ddbMock.on(GetCommand).resolves({
         Item: {
-          shortUrl: 'future123',
+          shortCode: 'future123',
           longUrl: 'https://example.com/future',
           createdAt: 1704067200,
           expiresAt: futureExpiration
@@ -177,7 +177,7 @@ describe('Redirect Handler - Unit Tests', () => {
       // Mock DynamoDB to return expired URL mapping
       ddbMock.on(GetCommand).resolves({
         Item: {
-          shortUrl: 'expired123',
+          shortCode: 'expired123',
           longUrl: 'https://example.com/expired',
           createdAt: 1704067200,
           expiresAt: pastExpiration
@@ -211,7 +211,7 @@ describe('Redirect Handler - Unit Tests', () => {
       // Mock DynamoDB to return URL mapping expiring now
       ddbMock.on(GetCommand).resolves({
         Item: {
-          shortUrl: 'expiring-now',
+          shortCode: 'expiring-now',
           longUrl: 'https://example.com/expiring',
           createdAt: 1704067200,
           expiresAt: currentTime
@@ -316,7 +316,7 @@ describe('Redirect Handler - Unit Tests', () => {
       // Mock DynamoDB to return URL with special characters
       ddbMock.on(GetCommand).resolves({
         Item: {
-          shortUrl: 'special123',
+          shortCode: 'special123',
           longUrl: 'https://example.com/path?query=value&foo=bar#fragment',
           createdAt: 1704067200
         }
@@ -372,7 +372,7 @@ describe('Redirect Handler - Property-Based Tests', () => {
           // Mock DynamoDB to return the URL mapping
           ddbMock.on(GetCommand).resolves({
             Item: {
-              shortUrl: shortCode,
+              shortCode: shortCode,
               longUrl,
               createdAt
             }
@@ -468,7 +468,7 @@ describe('Redirect Handler - Property-Based Tests', () => {
           const longUrl = 'https://example.com/test';
           ddbMock.on(GetCommand).resolves({
             Item: {
-              shortUrl: shortCode,
+              shortCode: shortCode,
               longUrl,
               createdAt: Math.floor(Date.now() / 1000)
             }
@@ -496,7 +496,7 @@ describe('Redirect Handler - Property-Based Tests', () => {
           const calls = ddbMock.commandCalls(GetCommand);
           expect(calls.length).toBeGreaterThan(0);
           const lastCall = calls[calls.length - 1];
-          expect(lastCall.args[0].input.Key.shortUrl).toBe(shortCode);
+          expect(lastCall.args[0].input.Key.shortCode).toBe(shortCode);
         }
       ),
       { numRuns: 100 }

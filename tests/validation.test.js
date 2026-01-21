@@ -29,6 +29,33 @@ describe('URL Validation - Property-Based Tests', () => {
 
 });
 
+describe('Custom Alias Validation - Property-Based Tests', () => {
+  
+  // Feature: url-shortener-service, Property 13: Custom Alias Validation
+  // Validates: Requirements 5.1, 5.4
+  test('Property 13: Custom Alias Validation - only valid aliases (4-32 chars, alphanumeric + hyphens/underscores) are accepted', () => {
+    fc.assert(
+      fc.property(
+        fc.string(),
+        (alias) => {
+          const result = isValidAlias(alias);
+          
+          // Determine if the alias should be valid based on requirements
+          const length = alias.length;
+          const hasValidLength = length >= 4 && length <= 32;
+          const hasValidChars = /^[a-zA-Z0-9_-]+$/.test(alias);
+          const shouldBeValid = hasValidLength && hasValidChars;
+          
+          // The function should return true if and only if the alias meets all criteria
+          expect(result).toBe(shouldBeValid);
+        }
+      ),
+      { numRuns: 100 }
+    );
+  });
+
+});
+
 describe('URL Validation - Unit Tests (Edge Cases)', () => {
   
   describe('Valid URLs', () => {

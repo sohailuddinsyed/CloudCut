@@ -91,8 +91,8 @@ describe('CreateShortUrl Handler - Property-Based Tests', () => {
           expect(storedItem).toBeDefined();
           
           // Verify stored item contains complete mapping
-          expect(storedItem).toHaveProperty('shortUrl');
-          expect(storedItem.shortUrl).toBe(responseBody.shortCode);
+          expect(storedItem).toHaveProperty('shortCode');
+          expect(storedItem.shortCode).toBe(responseBody.shortCode);
           
           expect(storedItem).toHaveProperty('longUrl');
           expect(storedItem.longUrl).toBe(longUrl);
@@ -101,9 +101,9 @@ describe('CreateShortUrl Handler - Property-Based Tests', () => {
           expect(typeof storedItem.createdAt).toBe('number');
           expect(storedItem.createdAt).toBeGreaterThan(0);
           
-          // Verify shortUrl is used as partition key in the stored item
-          expect(storedItem.shortUrl).toBeTruthy();
-          expect(storedItem.shortUrl.length).toBeGreaterThan(0);
+          // Verify shortCode is used as partition key in the stored item
+          expect(storedItem.shortCode).toBeTruthy();
+          expect(storedItem.shortCode.length).toBeGreaterThan(0);
         }
       ),
       { numRuns: 100 }

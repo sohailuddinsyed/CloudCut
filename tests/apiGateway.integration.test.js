@@ -94,7 +94,7 @@ describe('API Gateway Integration Tests', () => {
       
       const storedItem = putCalls[0].args[0].input.Item;
       expect(storedItem.longUrl).toBe('https://www.example.com/very/long/url/with/parameters?foo=bar');
-      expect(storedItem.shortUrl).toBe(responseBody.shortCode);
+      expect(storedItem.shortCode).toBe(responseBody.shortCode);
       expect(storedItem.createdAt).toBeDefined();
     });
 
@@ -202,7 +202,7 @@ describe('API Gateway Integration Tests', () => {
       // Mock DynamoDB to return a valid URL mapping
       ddbMock.on(GetCommand).resolves({
         Item: {
-          shortUrl: 'abc123',
+          shortCode: 'abc123',
           longUrl: 'https://www.example.com/original/destination',
           createdAt: 1704067200
         }
@@ -245,7 +245,7 @@ describe('API Gateway Integration Tests', () => {
       // Verify DynamoDB was queried with correct key
       const getCalls = ddbMock.commandCalls(GetCommand);
       expect(getCalls.length).toBeGreaterThan(0);
-      expect(getCalls[0].args[0].input.Key.shortUrl).toBe('abc123');
+      expect(getCalls[0].args[0].input.Key.shortCode).toBe('abc123');
     });
 
     test('returns 404 for invalid short code', async () => {
@@ -293,7 +293,7 @@ describe('API Gateway Integration Tests', () => {
       // Mock DynamoDB to return an expired URL mapping
       ddbMock.on(GetCommand).resolves({
         Item: {
-          shortUrl: 'expired123',
+          shortCode: 'expired123',
           longUrl: 'https://www.example.com/expired',
           createdAt: 1704067200,
           expiresAt: pastExpiration
@@ -334,7 +334,7 @@ describe('API Gateway Integration Tests', () => {
       // Mock DynamoDB to return a valid URL mapping
       ddbMock.on(GetCommand).resolves({
         Item: {
-          shortUrl: 'test123',
+          shortCode: 'test123',
           longUrl: 'https://www.example.com/test',
           createdAt: 1704067200
         }
@@ -444,7 +444,7 @@ describe('API Gateway Integration Tests', () => {
       ddbMock.reset();
       ddbMock.on(GetCommand).resolves({
         Item: {
-          shortUrl: createdShortCode,
+          shortCode: createdShortCode,
           longUrl: 'https://www.example.com/end-to-end-test',
           createdAt: Math.floor(Date.now() / 1000)
         }
