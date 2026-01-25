@@ -46,6 +46,15 @@ async function handler(event) {
 
     const { longUrl, customAlias, expiresAt } = body;
 
+    // Log request details for debugging
+    logInfo('Request body parsed', { 
+      requestId, 
+      hasLongUrl: !!longUrl,
+      hasCustomAlias: !!customAlias,
+      customAliasType: typeof customAlias,
+      customAliasValue: customAlias
+    });
+
     // Validate longUrl is provided
     if (!longUrl) {
       logInfo('Missing longUrl in request', { requestId });
@@ -61,7 +70,7 @@ async function handler(event) {
     // 2. Generate or validate short code
     let shortCode;
     
-    if (customAlias) {
+    if (customAlias && customAlias.trim() !== '') {
       // Validate custom alias format
       if (!isValidAlias(customAlias)) {
         logInfo('Invalid custom alias format', { requestId, customAlias });
@@ -73,7 +82,7 @@ async function handler(event) {
       }
 
       // Check if alias already exists
-      const existing = await getItem(URL_TABLE, { shortCode: customAlias });
+      const existing = await getItem(URL_TABLE, { shortUrl: customAlias });
       if (existing) {
         logInfo('Custom alias already taken', { requestId, customAlias });
         return errorResponse(409, 'ALIAS_TAKEN', 'This alias is already in use');
@@ -90,7 +99,7 @@ async function handler(event) {
 
     // 3. Store mapping in DynamoDB
     const item = {
-      shortCode: shortCode,  // Use shortCode as partition key to match DynamoDB schema
+      shortUrl: shortCode,  // Use shortUrl as partition key to match DynamoDB schema
       longUrl,
       createdAt: Math.floor(Date.now() / 1000)
     };
@@ -112,6 +121,17 @@ async function handler(event) {
     // 4. Return success response
     const shortUrl = `${BASE_URL}/${shortCode}`;
     
+    const responseBody = {
+      shortUrl,
+      shortCode,
+      longUrl
+    };
+
+    // Include expiresAt if it was set
+    if (expiresAt) {
+      responseBody.expiresAt = expiresAt;
+    }
+    
     return {
       statusCode: 201,
       headers: {
@@ -120,11 +140,7 @@ async function handler(event) {
         'Access-Control-Allow-Headers': 'Content-Type',
         'Access-Control-Allow-Methods': 'POST,GET,OPTIONS'
       },
-      body: JSON.stringify({
-        shortUrl,
-        shortCode,
-        longUrl
-      })
+      body: JSON.stringify(responseBody)
     };
 
   } catch (error) {

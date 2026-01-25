@@ -10,7 +10,7 @@
     <div class="container">
         <div class="card">
             <div class="header">
-                <h1>🔗 URL Shortener</h1>
+                <h1>🔗 CloudCut </h1>
                 <p class="subtitle">Transform long URLs into short, shareable links</p>
             </div>
 
@@ -38,6 +38,15 @@
                     >
                 </div>
 
+                <div class="input-group">
+                    <label for="expirationDate">Expiration date (optional)</label>
+                    <input 
+                        type="datetime-local" 
+                        id="expirationDate"
+                    >
+                    <span class="help-text">Default: 30 days from now if not specified</span>
+                </div>
+
                 <button type="submit" class="btn-primary" id="shortenBtn">
                     <span class="btn-text">Shorten URL</span>
                     <span class="loader" style="display: none;"></span>
@@ -56,6 +65,7 @@
                             </svg>
                         </button>
                     </div>
+                    <div id="expirationInfo" class="expiration-info"></div>
                 </div>
             </div>
 
@@ -67,6 +77,13 @@
         </footer>
     </div>
 
+    <script>
+        // Environment configuration - replace this in production
+        window.ENV = {
+            API_BASE_URL: 'https://your-api-id.execute-api.amazonaws.com'
+        };
+    </script>
+    <script src="config.js"></script>
     <script src="script.js"></script>
 </body>
 </html>

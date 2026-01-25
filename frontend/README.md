@@ -93,10 +93,16 @@ amplify publish
 
 ## API Configuration
 
-The frontend is pre-configured to use the API Gateway endpoint:
+The frontend is pre-configured to use the API Gateway endpoint. You need to configure it:
+
+1. Edit `frontend/index.html` and update the `window.ENV.API_BASE_URL` value:
+```javascript
+window.ENV = {
+    API_BASE_URL: 'https://YOUR-API-ID.execute-api.us-east-1.amazonaws.com/prod'
+};
 ```
-https://kign8kfdd7.execute-api.us-east-1.amazonaws.com/prod
-```
+
+Or for production deployments, inject the environment variable at build time.
 
 To change the API endpoint, edit the `API_BASE_URL` constant in `script.js`:
 

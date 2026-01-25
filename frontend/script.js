@@ -1,10 +1,11 @@
-// API Configuration
-const API_BASE_URL = 'https://kign8kfdd7.execute-api.us-east-1.amazonaws.com/prod';
+// API Configuration - loaded from config.js
+const API_BASE_URL = window.APP_CONFIG?.API_BASE_URL || 'https://your-api-id.execute-api.us-east-1.amazonaws.com/prod';
 
 // DOM Elements
 const form = document.getElementById('shortenForm');
 const longUrlInput = document.getElementById('longUrl');
 const customAliasInput = document.getElementById('customAlias');
+const expirationDateInput = document.getElementById('expirationDate');
 const shortenBtn = document.getElementById('shortenBtn');
 const btnText = document.querySelector('.btn-text');
 const loader = document.querySelector('.loader');
@@ -12,6 +13,7 @@ const resultDiv = document.getElementById('result');
 const shortUrlInput = document.getElementById('shortUrl');
 const copyBtn = document.getElementById('copyBtn');
 const messageDiv = document.getElementById('message');
+const expirationInfo = document.getElementById('expirationInfo');
 
 // Validate URL format
 function isValidUrl(string) {
@@ -21,6 +23,34 @@ function isValidUrl(string) {
     } catch (_) {
         return false;
     }
+}
+
+// Calculate default expiration (30 days from now) in Unix timestamp (seconds)
+function getDefaultExpiration() {
+    const now = Math.floor(Date.now() / 1000); // Current time in seconds
+    const thirtyDaysInSeconds = 30 * 24 * 60 * 60;
+    return now + thirtyDaysInSeconds;
+}
+
+// Convert datetime-local value to Unix timestamp (seconds)
+function datetimeToUnixTimestamp(datetimeValue) {
+    if (!datetimeValue) return null;
+    const date = new Date(datetimeValue);
+    return Math.floor(date.getTime() / 1000); // Convert milliseconds to seconds
+}
+
+// Format Unix timestamp to human-readable date
+function formatExpirationDate(unixTimestamp) {
+    const date = new Date(unixTimestamp * 1000); // Convert seconds to milliseconds
+    const options = { 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric', 
+        hour: 'numeric', 
+        minute: '2-digit',
+        hour12: true 
+    };
+    return date.toLocaleString('en-US', options);
 }
 
 // Show message (success or error)
@@ -49,7 +79,7 @@ function setLoading(isLoading) {
 }
 
 // Shorten URL API call
-async function shortenUrl(longUrl, customAlias = '') {
+async function shortenUrl(longUrl, customAlias = '', expiresAt = null) {
     const requestBody = {
         longUrl: longUrl
     };
@@ -57,6 +87,9 @@ async function shortenUrl(longUrl, customAlias = '') {
     if (customAlias && customAlias.trim() !== '') {
         requestBody.customAlias = customAlias.trim();
     }
+    
+    // Add expiration: use provided value or default to 30 days
+    requestBody.expiresAt = expiresAt || getDefaultExpiration();
     
     try {
         const response = await fetch(`${API_BASE_URL}/shorten`, {
@@ -85,6 +118,7 @@ form.addEventListener('submit', async (e) => {
     
     const longUrl = longUrlInput.value.trim();
     const customAlias = customAliasInput.value.trim();
+    const expirationDateValue = expirationDateInput.value;
     
     // Validate URL
     if (!isValidUrl(longUrl)) {
@@ -98,6 +132,19 @@ form.addEventListener('submit', async (e) => {
         return;
     }
     
+    // Convert expiration date to Unix timestamp if provided
+    let expiresAt = null;
+    if (expirationDateValue) {
+        expiresAt = datetimeToUnixTimestamp(expirationDateValue);
+        
+        // Validate that expiration is in the future
+        const now = Math.floor(Date.now() / 1000);
+        if (expiresAt <= now) {
+            showMessage('Expiration date must be in the future', 'error');
+            return;
+        }
+    }
+    
     // Hide previous results and messages
     resultDiv.style.display = 'none';
     messageDiv.style.display = 'none';
@@ -106,10 +153,18 @@ form.addEventListener('submit', async (e) => {
     setLoading(true);
     
     try {
-        const result = await shortenUrl(longUrl, customAlias);
+        const result = await shortenUrl(longUrl, customAlias, expiresAt);
         
         // Display the shortened URL
         shortUrlInput.value = result.shortUrl;
+        
+        // Display expiration information
+        if (result.expiresAt) {
+            const formattedDate = formatExpirationDate(result.expiresAt);
+            expirationInfo.textContent = `Expires: ${formattedDate}`;
+            expirationInfo.style.display = 'block';
+        }
+        
         resultDiv.style.display = 'block';
         
         showMessage('URL shortened successfully! 🎉', 'success');
@@ -117,6 +172,7 @@ form.addEventListener('submit', async (e) => {
         // Clear the form
         longUrlInput.value = '';
         customAliasInput.value = '';
+        expirationDateInput.value = '';
         
     } catch (error) {
         console.error('Error shortening URL:', error);

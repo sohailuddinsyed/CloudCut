@@ -99,7 +99,8 @@ body {
 }
 
 input[type="url"],
-input[type="text"] {
+input[type="text"],
+input[type="datetime-local"] {
     width: 100%;
     padding: 14px 16px;
     border: 2px solid var(--border-color);
@@ -110,7 +111,8 @@ input[type="text"] {
 }
 
 input[type="url"]:focus,
-input[type="text"]:focus {
+input[type="text"]:focus,
+input[type="datetime-local"]:focus {
     border-color: var(--primary-color);
     box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
 }
@@ -118,6 +120,13 @@ input[type="text"]:focus {
 input[type="url"]::placeholder,
 input[type="text"]::placeholder {
     color: #9ca3af;
+}
+
+.help-text {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    font-style: italic;
+    margin-top: -4px;
 }
 
 .btn-primary {
@@ -208,6 +217,16 @@ input[type="text"]::placeholder {
     background: #f0fdf4;
     color: var(--text-primary);
     font-weight: 500;
+}
+
+.expiration-info {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    padding: 8px 12px;
+    background: #f9fafb;
+    border-radius: 8px;
+    margin-top: 8px;
+    display: none;
 }
 
 .btn-copy {

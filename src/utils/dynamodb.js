@@ -65,7 +65,7 @@ async function incrementCounter(tableName, counterName) {
 async function incrementClickCount(tableName, shortCode) {
   const command = new UpdateCommand({
     TableName: tableName,
-    Key: { shortUrl: shortCode },
+    Key: { shortUrl: shortCode },  // Table uses shortUrl as partition key
     UpdateExpression: 'ADD clickCount :inc',
     ExpressionAttributeValues: { ':inc': 1 },
     ReturnValues: 'NONE'
