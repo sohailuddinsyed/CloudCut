@@ -94,7 +94,7 @@ describe('API Gateway Integration Tests', () => {
       
       const storedItem = putCalls[0].args[0].input.Item;
       expect(storedItem.longUrl).toBe('https://www.example.com/very/long/url/with/parameters?foo=bar');
-      expect(storedItem.shortCode).toBe(responseBody.shortCode);
+      expect(storedItem.shortUrl).toBe(responseBody.shortCode);  // shortUrl is the actual DynamoDB partition key
       expect(storedItem.createdAt).toBeDefined();
     });
 
@@ -242,10 +242,10 @@ describe('API Gateway Integration Tests', () => {
       const responseBody = JSON.parse(response.body);
       expect(responseBody.message).toBe('Redirecting...');
       
-      // Verify DynamoDB was queried with correct key
+      // Verify DynamoDB was queried with correct key (shortUrl is the actual partition key)
       const getCalls = ddbMock.commandCalls(GetCommand);
       expect(getCalls.length).toBeGreaterThan(0);
-      expect(getCalls[0].args[0].input.Key.shortCode).toBe('abc123');
+      expect(getCalls[0].args[0].input.Key.shortUrl).toBe('abc123');
     });
 
     test('returns 404 for invalid short code', async () => {

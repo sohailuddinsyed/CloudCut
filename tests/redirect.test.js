@@ -6,7 +6,7 @@
 
 const fc = require('fast-check');
 const { mockClient } = require('aws-sdk-client-mock');
-const { DynamoDBDocumentClient, GetCommand } = require('@aws-sdk/lib-dynamodb');
+const { DynamoDBDocumentClient, GetCommand, UpdateCommand } = require('@aws-sdk/lib-dynamodb');
 const { handler } = require('../src/handlers/redirect');
 const { handler: createHandler } = require('../src/handlers/createShortUrl');
 
@@ -492,11 +492,195 @@ describe('Redirect Handler - Property-Based Tests', () => {
           expect(response.statusCode).toBe(302);
           expect(response.headers.Location).toBe(longUrl);
           
-          // Verify DynamoDB was called with the correct shortCode
+          // Verify DynamoDB was called with the correct key (shortUrl is the actual partition key)
           const calls = ddbMock.commandCalls(GetCommand);
           expect(calls.length).toBeGreaterThan(0);
           const lastCall = calls[calls.length - 1];
-          expect(lastCall.args[0].input.Key.shortCode).toBe(shortCode);
+          expect(lastCall.args[0].input.Key.shortUrl).toBe(shortCode);
+        }
+      ),
+      { numRuns: 100 }
+    );
+  });
+
+});
+
+// Feature: url-shortener-service, Property 16: Click Counter Increment
+describe('Redirect Handler - Click Counter Increment (Property 16)', () => {
+
+  beforeEach(() => {
+    ddbMock.reset();
+
+    process.env.URL_TABLE = 'url_mappings';
+    process.env.COUNTER_TABLE = 'counters';
+    process.env.BASE_URL = 'https://api.example.com';
+  });
+
+  afterEach(() => {
+    ddbMock.restore();
+  });
+
+  // Feature: url-shortener-service, Property 16: Click Counter Increment
+  // Validates: Requirements 6.2
+  test('Property 16: Click counter increments by 1 for each redirect', async () => {
+    await fc.assert(
+      fc.asyncProperty(
+        // Generate random valid short codes (Base62 characters)
+        fc.stringOf(
+          fc.constantFrom(
+            ...'0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')
+          ),
+          { minLength: 1, maxLength: 10 }
+        ),
+        // Generate number of times to access the URL (2-5 times)
+        fc.integer({ min: 2, max: 5 }),
+        async (shortCode, accessCount) => {
+          // Reset mock for each iteration
+          ddbMock.reset();
+
+          // Mock GetCommand to return a valid URL mapping
+          ddbMock.on(GetCommand).resolves({
+            Item: {
+              shortCode,
+              longUrl: 'https://example.com/original',
+              createdAt: Math.floor(Date.now() / 1000)
+            }
+          });
+
+          // Mock UpdateCommand (incrementClickCount) to succeed
+          ddbMock.on(UpdateCommand).resolves({});
+
+          // Call the redirect handler accessCount times
+          for (let i = 0; i < accessCount; i++) {
+            const response = await handler({
+              pathParameters: { shortCode },
+              requestContext: { requestId: `test-${shortCode}-${i}` }
+            });
+
+            // Each call should succeed with a 302 redirect
+            expect(response.statusCode).toBe(302);
+          }
+
+          // Verify incrementClickCount (UpdateCommand) was called exactly once per redirect
+          const updateCalls = ddbMock.commandCalls(UpdateCommand);
+          expect(updateCalls.length).toBe(accessCount);
+        }
+      ),
+      { numRuns: 100 }
+    );
+  });
+
+});
+
+// Feature: url-shortener-service, Property 17: Click Event Recording
+describe('Redirect Handler - Click Event Recording (Property 17)', () => {
+
+  beforeEach(() => {
+    ddbMock.reset();
+
+    process.env.URL_TABLE = 'url_mappings';
+    process.env.CLICK_EVENTS_TABLE = 'click_events';
+    process.env.COUNTER_TABLE = 'counters';
+    process.env.BASE_URL = 'https://api.example.com';
+  });
+
+  afterEach(() => {
+    ddbMock.restore();
+  });
+
+  // Feature: url-shortener-service, Property 17: Click Event Recording
+  // Validates: Requirements 6.1
+  test('Property 17: Click event records are created with timestamp, shortCode, ipAddress, userAgent, and referrer', async () => {
+    const { PutCommand: PutCmd } = require('@aws-sdk/lib-dynamodb');
+
+    await fc.assert(
+      fc.asyncProperty(
+        // Generate random valid short codes (Base62 characters)
+        fc.stringOf(
+          fc.constantFrom(
+            ...'0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')
+          ),
+          { minLength: 1, maxLength: 10 }
+        ),
+        // Generate random IP addresses
+        fc.tuple(
+          fc.integer({ min: 1, max: 254 }),
+          fc.integer({ min: 0, max: 255 }),
+          fc.integer({ min: 0, max: 255 }),
+          fc.integer({ min: 1, max: 254 })
+        ).map(([a, b, c, d]) => `${a}.${b}.${c}.${d}`),
+        // Generate random user agent strings
+        fc.string({ minLength: 5, maxLength: 80 }),
+        // Generate random referrer URLs (or empty string)
+        fc.oneof(
+          fc.constant(''),
+          fc.webUrl({ validSchemes: ['http', 'https'] })
+        ),
+        async (shortCode, ipAddress, userAgent, referrer) => {
+          // Reset mock for each iteration
+          ddbMock.reset();
+
+          // Track click events written to click_events table
+          const capturedClickEvents = [];
+
+          // Mock GetCommand to return a valid URL mapping
+          ddbMock.on(GetCommand).resolves({
+            Item: {
+              shortCode,
+              longUrl: 'https://example.com/original',
+              createdAt: Math.floor(Date.now() / 1000)
+            }
+          });
+
+          // Mock UpdateCommand (incrementClickCount) to succeed
+          ddbMock.on(UpdateCommand).resolves({});
+
+          // Mock PutCommand: capture click events written to click_events table
+          ddbMock.on(PutCmd).callsFake((input) => {
+            if (input.TableName === 'click_events') {
+              capturedClickEvents.push(input.Item);
+            }
+            return Promise.resolve({});
+          });
+
+          const beforeTime = Date.now();
+
+          // Invoke the redirect handler with IP, user agent, and referrer headers
+          const response = await handler({
+            pathParameters: { shortCode },
+            headers: {
+              'User-Agent': userAgent,
+              'Referer': referrer
+            },
+            requestContext: {
+              requestId: `test-${shortCode}`,
+              identity: {
+                sourceIp: ipAddress
+              }
+            }
+          });
+
+          const afterTime = Date.now();
+
+          // Redirect should succeed
+          expect(response.statusCode).toBe(302);
+
+          // Exactly one click event should have been written
+          expect(capturedClickEvents.length).toBe(1);
+
+          const clickEvent = capturedClickEvents[0];
+
+          // Verify all required fields are present
+          expect(clickEvent).toHaveProperty('shortCode', shortCode);
+          expect(clickEvent).toHaveProperty('timestamp');
+          expect(clickEvent).toHaveProperty('ipAddress', ipAddress);
+          expect(clickEvent).toHaveProperty('userAgent', userAgent);
+          expect(clickEvent).toHaveProperty('referrer', referrer);
+
+          // Timestamp must be a number (Unix ms) within the test window
+          expect(typeof clickEvent.timestamp).toBe('number');
+          expect(clickEvent.timestamp).toBeGreaterThanOrEqual(beforeTime);
+          expect(clickEvent.timestamp).toBeLessThanOrEqual(afterTime);
         }
       ),
       { numRuns: 100 }

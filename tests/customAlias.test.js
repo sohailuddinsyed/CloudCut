@@ -36,12 +36,12 @@ describe('Custom Alias - Property-Based Tests', () => {
     // Set up mocks
     ddbMock.on(GetCommand).callsFake((input) => {
       if (input.TableName === 'url_mappings') {
-        const shortCode = input.Key.shortCode;
+        const shortUrl = input.Key.shortUrl;  // shortUrl is the actual DynamoDB partition key
         // Return item if alias exists, null otherwise
-        if (storedAliases.has(shortCode)) {
+        if (storedAliases.has(shortUrl)) {
           return Promise.resolve({
             Item: {
-              shortCode: shortCode,
+              shortUrl: shortUrl,
               longUrl: 'https://example.com/existing',
               createdAt: Math.floor(Date.now() / 1000)
             }
@@ -53,8 +53,8 @@ describe('Custom Alias - Property-Based Tests', () => {
     
     ddbMock.on(PutCommand).callsFake((input) => {
       if (input.TableName === 'url_mappings') {
-        // Store the alias
-        storedAliases.add(input.Item.shortCode);
+        // Store the alias (shortUrl is the partition key)
+        storedAliases.add(input.Item.shortUrl);
       }
       return Promise.resolve({});
     });

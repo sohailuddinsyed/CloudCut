@@ -99,7 +99,7 @@ async function handler(event) {
 
     // 3. Store mapping in DynamoDB
     const item = {
-      shortUrl: shortCode,  // Use shortUrl as partition key to match DynamoDB schema
+      shortUrl: shortCode,  // shortUrl is the actual DynamoDB partition key
       longUrl,
       createdAt: Math.floor(Date.now() / 1000)
     };

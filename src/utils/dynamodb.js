@@ -1,9 +1,16 @@
 const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
-const { DynamoDBDocumentClient, GetCommand, PutCommand, UpdateCommand } = require('@aws-sdk/lib-dynamodb');
+const { DynamoDBDocumentClient, GetCommand, PutCommand, UpdateCommand, QueryCommand } = require('@aws-sdk/lib-dynamodb');
 
-// Initialize DynamoDB DocumentClient
-const client = new DynamoDBClient({ region: 'us-east-1' });
-const docClient = DynamoDBDocumentClient.from(client);
+// Lazily initialized to avoid keeping open connections during tests
+let docClient = null;
+
+function getDocClient() {
+  if (!docClient) {
+    const client = new DynamoDBClient({ region: process.env.AWS_REGION || 'us-east-1' });
+    docClient = DynamoDBDocumentClient.from(client);
+  }
+  return docClient;
+}
 
 /**
  * Get an item from DynamoDB table
@@ -12,36 +19,16 @@ const docClient = DynamoDBDocumentClient.from(client);
  * @returns {Promise<Object|null>} The item if found, null otherwise
  */
 async function getItem(tableName, key) {
-  const command = new GetCommand({
-    TableName: tableName,
-    Key: key
-  });
-  
-  const response = await docClient.send(command);
+  const command = new GetCommand({ TableName: tableName, Key: key });
+  const response = await getDocClient().send(command);
   return response.Item || null;
 }
 
-/**
- * Put an item into DynamoDB table
- * @param {string} tableName - Name of the DynamoDB table
- * @param {Object} item - Item to store in the table
- * @returns {Promise<void>}
- */
 async function putItem(tableName, item) {
-  const command = new PutCommand({
-    TableName: tableName,
-    Item: item
-  });
-  
-  await docClient.send(command);
+  const command = new PutCommand({ TableName: tableName, Item: item });
+  await getDocClient().send(command);
 }
 
-/**
- * Atomically increment a counter in DynamoDB
- * @param {string} tableName - Name of the DynamoDB table
- * @param {string} counterName - Name of the counter to increment
- * @returns {Promise<number>} The new counter value after increment
- */
 async function incrementCounter(tableName, counterName) {
   const command = new UpdateCommand({
     TableName: tableName,
@@ -51,32 +38,43 @@ async function incrementCounter(tableName, counterName) {
     ExpressionAttributeValues: { ':inc': 1 },
     ReturnValues: 'UPDATED_NEW'
   });
-  
-  const response = await docClient.send(command);
+  const response = await getDocClient().send(command);
   return response.Attributes.value;
 }
 
-/**
- * Atomically increment click count for a short code
- * @param {string} tableName - Name of the DynamoDB table
- * @param {string} shortCode - Short code to increment click count for
- * @returns {Promise<void>}
- */
 async function incrementClickCount(tableName, shortCode) {
   const command = new UpdateCommand({
     TableName: tableName,
-    Key: { shortUrl: shortCode },  // Table uses shortUrl as partition key
+    Key: { shortUrl: shortCode },  // shortUrl is the actual DynamoDB partition key
     UpdateExpression: 'ADD clickCount :inc',
     ExpressionAttributeValues: { ':inc': 1 },
     ReturnValues: 'NONE'
   });
-  
-  await docClient.send(command);
+  await getDocClient().send(command);
+}
+
+async function putClickEvent(tableName, item) {
+  const command = new PutCommand({ TableName: tableName, Item: item });
+  await getDocClient().send(command);
+}
+
+async function queryClickEvents(tableName, shortCode, limit = 100) {
+  const command = new QueryCommand({
+    TableName: tableName,
+    KeyConditionExpression: 'shortCode = :shortCode',
+    ExpressionAttributeValues: { ':shortCode': shortCode },
+    ScanIndexForward: false,
+    Limit: limit
+  });
+  const response = await getDocClient().send(command);
+  return response.Items || [];
 }
 
 module.exports = {
   getItem,
   putItem,
   incrementCounter,
-  incrementClickCount
+  incrementClickCount,
+  putClickEvent,
+  queryClickEvents
 };
