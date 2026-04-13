@@ -3,6 +3,8 @@
  * Validates URLs and custom aliases according to requirements
  */
 
+const { isBlockedDomain } = require('./blocklist');
+
 /**
  * Validates URL format
  * Requirements: 1.2, 9.5
@@ -48,5 +50,6 @@ function isValidAlias(alias) {
 
 module.exports = {
   isValidUrl,
-  isValidAlias
+  isValidAlias,
+  isBlockedDomain
 };

@@ -8,10 +8,11 @@
  */
 
 const { encodeBase62 } = require('../utils/base62');
-const { isValidUrl, isValidAlias } = require('../utils/validation');
+const { isValidUrl, isValidAlias, isBlockedDomain } = require('../utils/validation');
 const { getItem, putItem, incrementCounter } = require('../utils/dynamodb');
 const { errorResponse } = require('../utils/errors');
 const { logInfo, logError } = require('../utils/logger');
+const { emitURLCreationCount, emitErrorCount, emitCreateLatency } = require('../utils/metrics');
 
 // Environment variables
 const URL_TABLE = process.env.URL_TABLE || 'url_mappings';
@@ -23,8 +24,11 @@ const BASE_URL = process.env.BASE_URL || 'https://example.com';
  * @param {Object} event - API Gateway Lambda Proxy event
  * @returns {Object} API Gateway Lambda Proxy response
  */
+const FUNCTION_NAME = process.env.AWS_LAMBDA_FUNCTION_NAME || 'CreateShortUrl';
+
 async function handler(event) {
   const requestId = event.requestContext?.requestId || 'unknown';
+  const startTime = Date.now();
   
   logInfo('CreateShortUrl invoked', {
     requestId,
@@ -65,6 +69,12 @@ async function handler(event) {
     if (!isValidUrl(longUrl)) {
       logInfo('Invalid URL format', { requestId, longUrl });
       return errorResponse(400, 'INVALID_URL', 'URL must start with http:// or https://');
+    }
+
+    // Check if URL is from a blocked domain
+    if (isBlockedDomain(longUrl)) {
+      logInfo('Blocked domain rejected', { requestId, longUrl });
+      return errorResponse(400, 'BLOCKED_URL', 'This URL is from a blocked domain and cannot be shortened');
     }
 
     // 2. Generate or validate short code
@@ -118,6 +128,11 @@ async function handler(event) {
       hasExpiration: !!expiresAt
     });
 
+    // Emit success metrics (non-blocking)
+    const latencyMs = Date.now() - startTime;
+    emitURLCreationCount(FUNCTION_NAME).catch(() => {});
+    emitCreateLatency(latencyMs, FUNCTION_NAME).catch(() => {});
+
     // 4. Return success response
     const shortUrl = `${BASE_URL}/${shortCode}`;
     
@@ -149,6 +164,9 @@ async function handler(event) {
       requestId,
       operation: 'createShortUrl'
     });
+    
+    // Emit error metric (non-blocking)
+    emitErrorCount(FUNCTION_NAME).catch(() => {});
     
     return errorResponse(500, 'INTERNAL_ERROR', 'An internal error occurred');
   }

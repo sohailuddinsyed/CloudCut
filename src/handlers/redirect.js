@@ -10,6 +10,7 @@
 const { getItem, incrementClickCount, putClickEvent } = require('../utils/dynamodb');
 const { errorResponse } = require('../utils/errors');
 const { logInfo, logError } = require('../utils/logger');
+const { emitRedirectCount, emitErrorCount, emitRedirectLatency } = require('../utils/metrics');
 
 // Environment variables
 const URL_TABLE = process.env.URL_TABLE || 'url_mappings';
@@ -20,8 +21,11 @@ const CLICK_EVENTS_TABLE = process.env.CLICK_EVENTS_TABLE || 'click_events';
  * @param {Object} event - API Gateway Lambda Proxy event
  * @returns {Object} API Gateway Lambda Proxy response
  */
+const FUNCTION_NAME = process.env.AWS_LAMBDA_FUNCTION_NAME || 'Redirect';
+
 async function handler(event) {
   const requestId = event.requestContext?.requestId || 'unknown';
+  const startTime = Date.now();
   
   logInfo('Redirect invoked', {
     requestId,
@@ -93,6 +97,11 @@ async function handler(event) {
       longUrl: item.longUrl
     });
 
+    // Emit success metrics (non-blocking)
+    const latencyMs = Date.now() - startTime;
+    emitRedirectCount(FUNCTION_NAME).catch(() => {});
+    emitRedirectLatency(latencyMs, FUNCTION_NAME).catch(() => {});
+
     return {
       statusCode: 302,
       headers: {
@@ -113,6 +122,9 @@ async function handler(event) {
       requestId,
       operation: 'redirect'
     });
+
+    // Emit error metric (non-blocking)
+    emitErrorCount(FUNCTION_NAME).catch(() => {});
     
     return errorResponse(500, 'INTERNAL_ERROR', 'An internal error occurred');
   }
