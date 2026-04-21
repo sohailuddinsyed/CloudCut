@@ -42,5 +42,5 @@ scripts/
 *.bat
 
 # Kiro specs and planning documents
-.kiro/
+# .kiro/
 *.md

@@ -1,0 +1,26 @@
+{
+  "mcpServers": {
+     "aws-mcp": {
+      "command": "python",
+      "timeout": 100000,
+      "transport": "stdio",
+      "args": [
+        "-m",
+        "uv",
+        "tool",
+        "run",
+        "mcp-proxy-for-aws@latest",
+        "https://aws-mcp.us-east-1.api.aws/mcp",
+        "--metadata",
+        "AWS_REGION=us-east-1"
+      ]
+    },
+    "fetch": {
+      "command": "uvx",
+      "args": ["mcp-server-fetch"],
+      "env": {},
+      "disabled": true,
+      "autoApprove": []
+    }
+  }
+}

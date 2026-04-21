@@ -10,8 +10,37 @@ export class UrlShortenerStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
-    // Import existing DynamoDB Tables
-    const urlTable = dynamodb.Table.fromTableName(this, 'UrlMappingsTable', 'url_mappings');
+    // Create users table for authentication
+    const usersTable = new dynamodb.Table(this, 'UsersTable', {
+      tableName: 'users',
+      partitionKey: { name: 'userId', type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      removalPolicy: cdk.RemovalPolicy.RETAIN,
+    });
+
+    // Add email-index GSI for login queries
+    usersTable.addGlobalSecondaryIndex({
+      indexName: 'email-index',
+      partitionKey: { name: 'email', type: dynamodb.AttributeType.STRING },
+      projectionType: dynamodb.ProjectionType.ALL,
+    });
+
+    // Create url_mappings table with userId-createdAt GSI for user URL queries
+    const urlTable = new dynamodb.Table(this, 'UrlMappingsTable', {
+      tableName: 'url_mappings',
+      partitionKey: { name: 'shortUrl', type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      removalPolicy: cdk.RemovalPolicy.RETAIN,
+    });
+
+    // Add userId-createdAt-index GSI for querying URLs by user
+    urlTable.addGlobalSecondaryIndex({
+      indexName: 'userId-createdAt-index',
+      partitionKey: { name: 'userId', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'createdAt', type: dynamodb.AttributeType.NUMBER },
+      projectionType: dynamodb.ProjectionType.ALL,
+    });
+
     const counterTable = dynamodb.Table.fromTableName(this, 'CountersTable', 'counters');
 
     // Create click_events table for detailed click attribution tracking
@@ -164,6 +193,21 @@ export class UrlShortenerStack extends cdk.Stack {
     new cdk.CfnOutput(this, 'GetAnalyticsFunctionArn', {
       value: getAnalyticsFunction.functionArn,
       description: 'GetAnalytics Lambda ARN',
+    });
+
+    new cdk.CfnOutput(this, 'UsersTableName', {
+      value: usersTable.tableName,
+      description: 'DynamoDB table for user accounts',
+    });
+
+    new cdk.CfnOutput(this, 'UsersTableEmailIndex', {
+      value: 'email-index',
+      description: 'GSI on users table for login queries by email',
+    });
+
+    new cdk.CfnOutput(this, 'UrlMappingsUserIndex', {
+      value: 'userId-createdAt-index',
+      description: 'GSI on url_mappings table for querying URLs by userId',
     });
   }
 }
